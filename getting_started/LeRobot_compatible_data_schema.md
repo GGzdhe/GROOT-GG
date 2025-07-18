@@ -1,22 +1,32 @@
 # Robot Data Conversion Guide
+# 机器人数据转换指南
 
 ## Overview
+## 概述
 
 This guide shows how to convert your robot data to work with our flavor of the [LeRobot dataset V2.0 format](https://github.com/huggingface/lerobot?tab=readme-ov-file#the-lerobotdataset-format) -- `GR00T LeRobot`. While we have added additional structure, our schema maintains full compatibility with the upstream LeRobot 2.0. The additional metadata and structure allow for more detailed specification and language annotations for your robot data.
 
+本指南展示如何将您的机器人数据转换为我们特色的[LeRobot数据集V2.0格式](https://github.com/huggingface/lerobot?tab=readme-ov-file#the-lerobotdataset-format) -- `GR00T LeRobot`。虽然我们添加了额外的结构，但我们的架构与上游LeRobot 2.0保持完全兼容。额外的元数据和结构允许对机器人数据进行更详细的规范和语言注释。
+
 > The TLDR: Add a `meta/modality.json` file to your dataset and follow the schema below. (refer to [3_new_embodiment_finetuning.ipynb](3_new_embodiment_finetuning.ipynb) for an example)
+> 
+> 简而言之：在您的数据集中添加一个`meta/modality.json`文件并遵循以下架构。（参考[3_new_embodiment_finetuning.ipynb](3_new_embodiment_finetuning.ipynb)示例）
 
 ## Requirements
+## 要求
 
 ### Core Requirements
+### 核心要求
 
 The folder should follow a similar structure as below and contain these core folders and files:
+文件夹应遵循如下类似结构，并包含这些核心文件夹和文件：
 
 ```
 .
 ├─meta 
 │ ├─episodes.jsonl
 │ ├─modality.json # -> GR00T LeRobot specific
+│                  # -> GR00T LeRobot专用
 │ ├─info.json
 │ └─tasks.jsonl
 ├─videos
@@ -31,22 +41,40 @@ The folder should follow a similar structure as below and contain these core fol
 ```
 
 ### Video Observations (video/chunk-*)
+### 视频观察数据 (video/chunk-*)
 The videos folder will contain the mp4 files associated with each episode following episode_00000X.mp4 naming format where X indicates the episode number.
+videos文件夹将包含与每个episode相关的mp4文件，遵循episode_00000X.mp4命名格式，其中X表示episode编号。
+
 **Requirements**:
+**要求**：
 - Must be stored as MP4 files.
 - Should be named using the format: `observation.images.<video_name>`
 
+- 必须存储为MP4文件。
+- 应使用格式命名：`observation.images.<video_name>`
+
 
 ### Data (data/chunk-*)
+### 数据 (data/chunk-*)
 The data folder will contain all of the parquet files associated with each episode following episode_00000X.parquet naming format where X indicates the episode number.
+data文件夹将包含与每个episode相关的所有parquet文件，遵循episode_00000X.parquet命名格式，其中X表示episode编号。
+
 Each parquet file will contain:
+每个parquet文件将包含：
 - State information: stored as observation.state which is a 1D concatenated array of all state modalities.
 - Action: stored as action which is a 1D concatenated array of all action modalities.
 - Timestamp: stored as timestamp which is a float point number of the starting time.
 - Annotations: stored as annotation.<annotation_source>.<annotation_type>(.<annotation_name>) (see the annotation field in the example configuration for example naming.).  No other columns should have the annotation prefix, see the (multiple-annotation-support) if interested in adding multiple annotations.
 
+- 状态信息：存储为observation.state，这是所有状态模态的一维连接数组。
+- 动作：存储为action，这是所有动作模态的一维连接数组。
+- 时间戳：存储为timestamp，这是起始时间的浮点数。
+- 注释：存储为annotation.<annotation_source>.<annotation_type>(.<annotation_name>)（示例命名请参见示例配置中的注释字段）。其他列不应使用annotation前缀，如果有兴趣添加多个注释，请参见（多注释支持）。
+
 #### Example Parquet File
+#### Parquet文件示例
 Here is a sample of the robot_sim.PickNPlace dataset that is present in the [demo_data](../../demo_data/robot_sim.PickNPlace/) directory.
+以下是[demo_data](../../demo_data/robot_sim.PickNPlace/)目录中存在的robot_sim.PickNPlace数据集的示例。
 ```
 {
     "observation.state":[-0.01147082911843003,...,0], // concatenated state array based on the modality.json file
