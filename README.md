@@ -42,6 +42,13 @@ GR00T N1.5 is trained on an expansive humanoid dataset, consisting of real captu
 
 GR00T N1.5在一个庞大的人形机器人数据集上进行训练，该数据集包含真实捕获的数据、使用NVIDIA Isaac GR00T Blueprint组件生成的合成数据（[神经生成轨迹示例](./media/videos)）以及互联网规模的视频数据。它可以通过后训练适应特定的具身、任务和环境。
 
+
+> To use the older version, N1, please checkout the [n1-release](https://github.com/NVIDIA/Isaac-GR00T/tree/n1-release) release branch.
+
+NVIDIA Isaac GR00T N1.5 is an open foundation model for generalized humanoid robot reasoning and skills. This cross-embodiment model takes multimodal input, including language and images, to perform manipulation tasks in diverse environments.
+
+GR00T N1.5 is trained on an expansive humanoid dataset, consisting of real captured data, synthetic data generated using the components of NVIDIA Isaac GR00T Blueprint ([examples of neural-generated trajectories](./media/videos)), and internet-scale video data. It is adaptable through post-training for specific embodiments, tasks and environments.
+
 <div align="center">
 <img src="media/real-data.gif" height="150" alt="real-robot-data">
 <img src="media/sim-data.gif" height="150" alt="sim-robot-data">
@@ -80,6 +87,11 @@ GR00T N1.5相比GR00T N1是一个重大升级，在模型架构和数据方面�
 
 ### Model and Data Improvements
 ### 模型和数据改进
+## What's New in GR00T N1.5
+
+GR00T N1.5 represents a significant upgrade over GR00T N1, with improvements in both model architecture and data leading to better performance in many aspects.
+
+### Model and Data Improvements
 
 - **Frozen VLM**: The vision-language model remains frozen during both pretraining and finetuning, preserving language understanding and improving generalization
 - **Enhanced VLM Grounding**: Updated to Eagle 2.5 with improved grounding capabilities and physical understanding, achieving 40.4 IoU on GR-1 grounding tasks (vs 35.5 for Qwen2.5VL).
@@ -95,6 +107,7 @@ GR00T N1.5相比GR00T N1是一个重大升级，在模型架构和数据方面�
 
 ### Performance Improvements
 ### 性能改进
+### Performance Improvements
 
 - **Language Following**: Significantly improved language command following versus N1 - 93.3% vs 46.6% on GR-1 manipulation tasks.
 - **Data Efficiency**: Better performance in low-data regimes (0-shot and few-shot scenarios)
@@ -119,6 +132,13 @@ GR00T N1.5 is intended for researchers and professionals in humanoid robotics. T
 
 GR00T N1.5面向人形机器人领域的研究人员和专业人士。本代码库提供工具来：
 
+These improvements make GR00T N1.5 particularly effective for applications requiring strong language understanding, few-shot adaptation, and generalization to novel objects and environments.
+See our GR00T N1.5 [tech blog](https://research.nvidia.com/labs/gear/gr00t-n1_5) for more details on the model and experimental results.
+
+## Target Audience
+
+GR00T N1.5 is intended for researchers and professionals in humanoid robotics. This repository provides tools to:
+
 - Leverage a pre-trained foundation model for robot control
 - Fine-tune on small, custom datasets
 - Adapt the model to specific robotics tasks with minimal data
@@ -135,6 +155,9 @@ The focus is on enabling customization of robot behaviors through finetuning.
 
 ## Prerequisites
 ## 先决条件
+The focus is on enabling customization of robot behaviors through finetuning.
+
+## Prerequisites
 
 - We have tested the code on Ubuntu 20.04 and 22.04, GPU: H100, L40, RTX 4090 and A6000 for finetuning and Python==3.10, CUDA version 12.4.
 - For inference, we have tested on Ubuntu 20.04 and 22.04, GPU: RTX 3090, RTX 4090 and A6000.
@@ -153,6 +176,9 @@ The focus is on enabling customization of robot behaviors through finetuning.
 
 Clone the repo:
 克隆代码库：
+## Installation Guide
+
+Clone the repo:
 
 ```sh
 git clone https://github.com/NVIDIA/Isaac-GR00T
@@ -165,6 +191,8 @@ Create a new conda environment and install the dependencies. We recommend Python
 > Note that, please make sure your CUDA version is 12.4. Otherwise, you may have a hard time with properly configuring flash-attn module.
 > 
 > 注意，请确保您的CUDA版本是12.4。否则，您可能难以正确配置flash-attn模块。
+
+> Note that, please make sure your CUDA version is 12.4. Otherwise, you may have a hard time with properly configuring flash-attn module.
 
 ```sh
 conda create -n gr00t python=3.10
@@ -182,6 +210,10 @@ We provide accessible Jupyter notebooks and detailed documentation in the [`./ge
 
 ## 1. Data Format & Loading
 ## 1. 数据格式和加载
+
+We provide accessible Jupyter notebooks and detailed documentation in the [`./getting_started`](./getting_started) folder. Utility scripts can be found in the [`./scripts`](./scripts) folder. Additionally, a comprehensive tutorial for finetuning the model on the SO-101 robot is available on [HuggingFace](https://huggingface.co/blog/nvidia/gr00t-n1-5-so101-tuning).
+
+## 1. Data Format & Loading
 
 - To load and process the data, we use [Huggingface LeRobot data](https://github.com/huggingface/lerobot), but with a more detailed modality and annotation schema (we call it "LeRobot compatible data schema").
 - An example of LeRobot dataset is stored here: `./demo_data/robot_sim.PickNPlace`. (with additional [`modality.json`](./demo_data/robot_sim.PickNPlace/meta/modality.json) file)
@@ -207,6 +239,9 @@ data_config = DATA_CONFIG_MAP["fourier_gr1_arms_only"]
 
 # get the modality configs and transforms
 # 获取模态配置和变换
+data_config = DATA_CONFIG_MAP["fourier_gr1_arms_only"]
+
+# get the modality configs and transforms
 modality_config = data_config.modality_config()
 transforms = data_config.transform()
 
@@ -223,6 +258,10 @@ dataset = LeRobotSingleDataset(
 
 # This is an example of how to access the data.
 # 这是如何访问数据的示例
+    embodiment_tag=EmbodimentTag.GR1, # the embodiment to use
+)
+
+# This is an example of how to access the data.
 dataset[5]
 ```
 
@@ -234,6 +273,7 @@ dataset[5]
 
 Try run the script to load the dataset
 尝试运行脚本来加载数据集：
+Try run the script to load the dataset
 ```bash
 python scripts/load_dataset.py --dataset-path ./demo_data/robot_sim.PickNPlace
 ```
@@ -249,6 +289,7 @@ python scripts/load_dataset.py --dataset-path ./demo_data/robot_sim.PickNPlace
 
 ### 2.1 Inference with PyTorch
 ### 2.1 使用PyTorch进行推理
+### 2.1 Inference with PyTorch
 
 ```python
 from gr00t.model.policy import Gr00tPolicy
@@ -265,6 +306,9 @@ dataset = LeRobotSingleDataset(.....<Same as above>.....)
 
 # 3. Load pre-trained model
 # 3. 加载预训练模型
+dataset = LeRobotSingleDataset(.....<Same as above>....)
+
+# 3. Load pre-trained model
 policy = Gr00tPolicy(
     model_path="nvidia/GR00T-N1.5-3B",
     modality_config=modality_config,
@@ -283,6 +327,8 @@ action_chunk = policy.get_action(dataset[0])
 
 User can also run the inference service using the provided script. The inference service can run in either server mode or client mode.
 用户也可以使用提供的脚本运行推理服务。推理服务可以在服务器模式或客户端模式下运行。
+
+User can also run the inference service using the provided script. The inference service can run in either server mode or client mode.
 
 ```bash
 python scripts/inference_service.py --model-path nvidia/GR00T-N1.5-3B --server
@@ -315,6 +361,19 @@ python scripts/gr00t_finetune.py --help
 
 # then run the script
 # 然后运行脚本
+
+To inference with ONNX and TensorRT, please refer to [`deployment_scripts/README.md`](deployment_scripts/README.md).
+
+## 3. Fine-Tuning
+
+Users can run the finetuning script below to finetune the model with the example dataset. A tutorial is available in [`getting_started/2_finetuning.ipynb`](getting_started/2_finetuning.ipynb).
+
+Then run the finetuning script:
+```bash
+# first run --help to see the available arguments
+python scripts/gr00t_finetune.py --help
+
+# then run the script
 python scripts/gr00t_finetune.py --dataset-path ./demo_data/robot_sim.PickNPlace --num-gpus 1
 ```
 
@@ -336,6 +395,10 @@ The recommended finetuning configuration is to boost your batch size to the max,
 
 *Hardware Performance Considerations*
 *硬件性能考虑*
+
+The recommended finetuning configuration is to boost your batch size to the max, and train for 20k steps.
+
+*Hardware Performance Considerations*
 - **Finetuning Performance**: We used 1 H100 node or L40 node for optimal finetuning. Other hardware configurations (e.g. A6000, RTX 4090) will also work but may take longer to converge. The exact batch size is dependent on the hardware, and on which component of the model is being tuned.
 - **LoRA finetuning**: We used 2 A6000 GPUs or 2 RTX 4090 GPUs for LoRA finetuning. Users can try out different configurations for effective finetuning.
 - **Inference Performance**: For real-time inference, most modern GPUs perform similarly when processing a single sample. Our benchmarks show minimal difference between L40 and RTX 4090 for inference speed.
@@ -349,6 +412,9 @@ For new embodiment finetuning, checkout our notebook in [`getting_started/3_0_ne
 
 ### Choosing the Right Embodiment Head
 ### 选择正确的具身头
+For new embodiment finetuning, checkout our notebook in [`getting_started/3_0_new_embodiment_finetuning.md`](getting_started/3_0_new_embodiment_finetuning.md).
+
+### Choosing the Right Embodiment Head
 
 <div align="center">
 <img src="media/robots-banner.png" width="1000" alt="robots-banner">
@@ -381,6 +447,23 @@ Or you can run the newly trained model in client-server mode.
 
 Run the newly trained model
 运行新训练的模型：
+Select the embodiment head that best matches your robot's configuration for optimal finetuning performance. For detailed information on the observation and action spaces, see [`EmbodimentTag`](getting_started/4_deeper_understanding.md#embodiment-action-head-fine-tuning).
+
+
+### Sim Env: [robocasa-gr1-tabletop-tasks](https://github.com/robocasa/robocasa-gr1-tabletop-tasks)
+
+Sample dataset for finetuning can be downloaed from our huggingface [here](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim)
+
+For Simulation Evaluation, please refer to [robocasa-gr1-tabletop-tasks](https://github.com/robocasa/robocasa-gr1-tabletop-tasks)
+
+
+## 4. Evaluation
+
+To conduct an offline evaluation of the model, we provide a script that evaluates the model on a dataset and plots it out. Quick try: `python scripts/eval_policy.py --plot --model_path nvidia/GR00T-N1.5-3B`
+
+Or you can run the newly trained model in client-server mode.
+
+Run the newly trained model
 ```bash
 python scripts/inference_service.py --server \
     --model-path <MODEL_PATH> \
@@ -408,6 +491,12 @@ A detailed guide for deploying GR00T N1.5 on Jetson is available in [`deployment
 
 Here's comparison of E2E performance between PyTorch and TensorRT on Orin
 以下是在Orin上PyTorch和TensorRT的端到端性能比较：
+
+## Jetson Deployment
+
+A detailed guide for deploying GR00T N1.5 on Jetson is available in [`deployment_scripts/README.md`](deployment_scripts/README.md).
+
+Here's comparison of E2E performance between PyTorch and TensorRT on Orin
 
 <div align="center">
 <img src="media/orin-perf.png" width="800" alt="orin-perf">
@@ -444,6 +533,17 @@ Model latency measured by `trtexec` with batch_size=1.
 
 *What is Modality Config? Embodiment Tag? and Transform Config?*
 *什么是模态配置？具身标签？变换配置？*
+
+# FAQ
+
+*Does it work on CUDA ARM Linux?*
+- Yes, visit [jetson-containers](https://github.com/dusty-nv/jetson-containers/tree/master/packages/robots/Isaac-GR00T). 
+
+*I have my own data, what should I do next for finetuning?*
+- This repo assumes that your data is already organized according to the LeRobot format. 
+
+
+*What is Modality Config? Embodiment Tag? and Transform Config?*
 - Embodiment Tag: Defines the robot embodiment used, non-pretrained embodiment tags are all considered as `new_embodiment`.
 - Modality Config: Defines the modalities used in the dataset (e.g. video, state, action)
 - Transform Config: Defines the Data Transforms applied to the data during dataloading.
@@ -459,6 +559,9 @@ Model latency measured by `trtexec` with batch_size=1.
 
 Below are benchmark results based on a single H100 GPU. Performance will be slightly slower on consumer GPUs like RTX 4090 for inference (single sample processing):
 以下是基于单个H100 GPU的基准测试结果。在消费级GPU如RTX 4090上进行推理（单样本处理）时性能会稍慢：
+*What is the inference speed for Gr00tPolicy?*
+
+Below are benchmark results based on a single H100 GPU. Performance will be slightly slower on consumer GPUs like RTX 4090 for inference (single sample processing):
 
 | Module | Inference Speed |
 |----------|------------------|
@@ -474,6 +577,10 @@ We noticed that 4 denoising steps are sufficient during inference.
 
 You can train with multiple datasets by providing a list of dataset paths to the `dataset_path` argument.
 您可以通过向`dataset_path`参数提供数据集路径列表来使用多个数据集进行训练。
+
+*How to train with multiple datasets?*
+
+You can train with multiple datasets by providing a list of dataset paths to the `dataset_path` argument.
 
 ```bash
 python scripts/gr00t_finetune.py --dataset-path <DATASET1> <DATASET2> --num-gpus 1
@@ -497,6 +604,17 @@ For more details, see [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License 
 ## 许可证
+
+*Is LoRA finetuning supported?*
+
+Yes, you can use LoRA finetuning to finetune the model. This can be enabled by indicating `--lora_rank 64  --lora_alpha 128` in the finetuning script. However, we recommend using the full model finetuning for better performance.
+
+# Contributing
+
+For more details, see [CONTRIBUTING.md](CONTRIBUTING.md)
+
+
+## License 
 
 ```
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.

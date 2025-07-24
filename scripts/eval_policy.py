@@ -50,65 +50,59 @@ python scripts/eval_policy.py --plot --model-path nvidia/GR00T-N1.5-3B
 @dataclass
 class ArgsConfig:
     """Configuration for evaluating a policy."""
-    """评估策略的配置"""
 
     host: str = "localhost"
     """Host to connect to."""
-    """连接的主机"""
 
     port: int = 5555
     """Port to connect to."""
-    """连接的端口"""
 
-    plot: bool = True
+    plot: bool = False
     """Whether to plot the images."""
-    """是否绘制图像"""
 
     modality_keys: List[str] = field(default_factory=lambda: ["right_arm", "left_arm"])
     """Modality keys to evaluate."""
-    """要评估的模态键"""
 
     data_config: Literal[tuple(DATA_CONFIG_MAP.keys())] = "fourier_gr1_arms_only"
     """Data config to use."""
-    """要使用的数据配置"""
 
     steps: int = 150
     """Number of steps to evaluate."""
-    """要评估的步数"""
 
     trajs: int = 1
     """Number of trajectories to evaluate."""
-    """要评估的轨迹数"""
 
-    action_horizon: int = 16
-    """Action horizon to evaluate."""
-    """要评估的动作时域"""
+    action_horizon: int = None
+    """Action horizon to evaluate. If None, will use the data config's action horizon."""
 
     video_backend: Literal["decord", "torchvision_av"] = "decord"
     """Video backend to use for various codec options. h264: decord or av: torchvision_av"""
-    """用于各种编解码器选项的视频后端。h264：decord或av：torchvision_av"""
 
     dataset_path: str = "demo_data/robot_sim.PickNPlace/"
     """Path to the dataset."""
-    """数据集路径"""
 
     embodiment_tag: Literal[tuple(EMBODIMENT_TAG_MAPPING.keys())] = "gr1"
     """Embodiment tag to use."""
-    """要使用的具身标签"""
 
     model_path: str = None
     """Path to the model checkpoint."""
-    """模型检查点路径"""
 
     denoising_steps: int = 4
     """Number of denoising steps to use."""
-    """要使用的去噪步数"""
+
+    save_plot_path: str = None
+    """Path to save the plot."""
 
 
 def main(args: ArgsConfig):
     data_config = DATA_CONFIG_MAP[args.data_config]
+
+    # Set action_horizon from data config if not provided
+    if args.action_horizon is None:
+        args.action_horizon = len(data_config.action_indices)
+        print(f"Using action_horizon={args.action_horizon} from data config '{args.data_config}'")
+
     if args.model_path is not None:
-        # 如果提供了模型路径，直接加载本地模型
         import torch
 
         modality_config = data_config.modality_config()
@@ -176,6 +170,7 @@ def main(args: ArgsConfig):
             steps=args.steps,
             action_horizon=args.action_horizon,
             plot=args.plot,
+            save_plot_path=args.save_plot_path,
         )
         print("MSE:", mse)
         all_mse.append(mse)

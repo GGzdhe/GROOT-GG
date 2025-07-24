@@ -36,125 +36,91 @@ from gr00t.utils.peft import get_lora_model
 @dataclass
 class ArgsConfig:
     """Configuration for GR00T model fine-tuning."""
-    """GR00T模型微调的配置类"""
 
     # Dataset parameters
-    # 数据集参数
     dataset_path: List[str]
     """Path to the dataset directory or directories"""
-    """数据集目录的路径（可以是单个或多个目录）"""
 
     output_dir: str = "/tmp/gr00t"
     """Directory to save model checkpoints."""
-    """保存模型检查点的目录"""
 
     data_config: Literal[tuple(DATA_CONFIG_MAP.keys())] = "fourier_gr1_arms_only"
     """Data configuration name from DATA_CONFIG_MAP, we assume all datasets have the same data config"""
-    """来自DATA_CONFIG_MAP的数据配置名称，假设所有数据集具有相同的数据配置"""
 
     # Training parameters
-    # 训练参数
     batch_size: int = 32
     """Batch size per GPU for training."""
-    """每个GPU的训练批次大小"""
 
     max_steps: int = 10000
     """Maximum number of training steps."""
-    """最大训练步数"""
 
     num_gpus: int = 1
     """Number of GPUs to use for training."""
-    """用于训练的GPU数量"""
 
     save_steps: int = 1000
     """Number of steps between saving checkpoints."""
-    """保存检查点的步数间隔"""
 
     # Model parameters
-    # 模型参数
     base_model_path: str = "nvidia/GR00T-N1.5-3B"
     """Path or HuggingFace model ID for the base model."""
-    """基础模型的路径或HuggingFace模型ID"""
 
     tune_llm: bool = False
     """Whether to fine-tune the language model backbone."""
-    """是否微调语言模型主干"""
 
     tune_visual: bool = False
     """Whether to fine-tune the vision tower."""
-    """是否微调视觉塔"""
 
     tune_projector: bool = True
     """Whether to fine-tune the projector."""
-    """是否微调投影器"""
 
     tune_diffusion_model: bool = True
     """Whether to fine-tune the diffusion model."""
-    """是否微调扩散模型"""
 
     resume: bool = False
     """Whether to resume from a checkpoint."""
-    """是否从检查点恢复训练"""
 
     # Advanced training parameters
-    # 高级训练参数
     learning_rate: float = 1e-4
     """Learning rate for training."""
-    """训练学习率"""
 
     weight_decay: float = 1e-5
     """Weight decay for AdamW optimizer."""
-    """AdamW优化器的权重衰减"""
 
     warmup_ratio: float = 0.05
     """Ratio of total training steps used for warmup."""
-    """用于预热的总训练步数比例"""
 
     lora_rank: int = 0
     """Rank for the LORA model. If 0, no LORA will be used."""
-    """LORA模型的秩。如果为0，则不使用LORA"""
 
     lora_alpha: int = 16
     """Alpha value for the LORA model."""
-    """LORA模型的alpha值"""
 
     lora_dropout: float = 0.1
     """Dropout rate for the LORA model."""
-    """LORA模型的dropout率"""
 
     lora_full_model: bool = False
     """Whether to use the full model for LORA. If False, only the action head will be trained."""
-    """是否对整个模型使用LORA。如果为False，则只训练动作头"""
 
     dataloader_num_workers: int = 8
     """Number of workers for data loading."""
-    """数据加载的工作进程数"""
 
-    report_to: Literal["wandb", "tensorboard"] = "wandb"
-    """Where to report training metrics (e.g., 'wandb', 'tensorboard')."""
-    """训练指标报告位置（例如：'wandb', 'tensorboard'）"""
+    report_to: Literal["wandb", "tensorboard", "azure_ml"] = "wandb"
+    """Where to report training metrics (e.g., 'wandb', 'tensorboard', 'azure_ml')."""
 
     # Data loading parameters
-    # 数据加载参数
     embodiment_tag: Literal[tuple(EMBODIMENT_TAG_MAPPING.keys())] = "new_embodiment"
     """Embodiment tag to use for training. e.g. 'new_embodiment', 'gr1'"""
-    """训练使用的具身标签，例如'new_embodiment', 'gr1'"""
 
     video_backend: Literal["decord", "torchvision_av"] = "decord"
     """Video backend to use for training. [decord, torchvision_av]"""
-    """训练使用的视频后端 [decord, torchvision_av]"""
 
     # Mixture dataset parameters
-    # 混合数据集参数
     balance_dataset_weights: bool = True
     """Used in LeRobotMixtureDataset. If True, we will balance the dataset weights, by multiplying the total trajectory to each dataset"""
-    """在LeRobotMixtureDataset中使用。如果为True，将通过乘以每个数据集的总轨迹来平衡数据集权重"""
 
     # Mixture dataset parameters
-    # 混合数据集参数
     balance_trajectory_weights: bool = True
     """Used in LeRobotMixtureDataset. If True, sample trajectories within a dataset weighted by their length; otherwise, equal weighting."""
-    """在LeRobotMixtureDataset中使用。如果为True，根据轨迹长度在数据集内加权采样轨迹；否则使用等权重"""
 
 
 #####################################################################################
@@ -223,25 +189,57 @@ def main(config: ArgsConfig):
         print(f"Loaded {len(single_datasets)} datasets, with {config.dataset_path} ")
 
     # ------------ step 2: load model ------------
-    # ------------ 步骤2：加载模型 ------------
+    # First, get the data config to determine action horizon
+    data_action_horizon = len(data_config_cls.action_indices)
+
+    # Load model
     model = GR00T_N1_5.from_pretrained(
         pretrained_model_name_or_path=config.base_model_path,
         tune_llm=config.tune_llm,  # backbone's LLM
-                                 # 主干的LLM
         tune_visual=config.tune_visual,  # backbone's vision tower
-                                       # 主干的视觉塔
         tune_projector=config.tune_projector,  # action head's projector
-                                             # 动作头的投影器
         tune_diffusion_model=config.tune_diffusion_model,  # action head's DiT
-                                                          # 动作头的DiT
     )
 
+    # Update action_horizon to match data config
+    # Need to recreate action head with correct config since it was initialized with old config
+    if data_action_horizon != model.action_head.config.action_horizon:
+        print(
+            f"Recreating action head with action_horizon {data_action_horizon} (was {model.action_head.config.action_horizon})"
+        )
+
+        # Update the action head config
+        new_action_head_config = model.action_head.config
+        new_action_head_config.action_horizon = data_action_horizon
+
+        # Import the FlowmatchingActionHead class
+        from gr00t.model.action_head.flow_matching_action_head import (
+            FlowmatchingActionHead,
+        )
+
+        # Create new action head with updated config
+        new_action_head = FlowmatchingActionHead(new_action_head_config)
+
+        # Copy the weights from the old action head to the new one
+        new_action_head.load_state_dict(model.action_head.state_dict(), strict=False)
+
+        # Replace the action head
+        model.action_head = new_action_head
+
+        # Update model config AND the action_head_cfg dictionary that gets saved
+        model.config.action_horizon = data_action_horizon
+        model.action_horizon = data_action_horizon
+        model.config.action_head_cfg["action_horizon"] = data_action_horizon
+
+        # Set trainable parameters for the new action head
+        model.action_head.set_trainable_parameters(
+            tune_projector=config.tune_projector, tune_diffusion_model=config.tune_diffusion_model
+        )
+
     # Set the model's compute_dtype to bfloat16
-    # 将模型的计算数据类型设置为bfloat16
     model.compute_dtype = "bfloat16"
     model.config.compute_dtype = "bfloat16"
 
-    # 如果配置了LORA秩大于0，则应用LORA模型
     if config.lora_rank > 0:
         model = get_lora_model(
             model,

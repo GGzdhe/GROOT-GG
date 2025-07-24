@@ -50,27 +50,21 @@ def print_yellow(text: str) -> None:
 @dataclass
 class ArgsConfig:
     """Configuration for loading the dataset."""
-    """加载数据集的配置类"""
 
     dataset_path: List[str] = field(default_factory=lambda: ["demo_data/robot_sim.PickNPlace"])
     """Path to the dataset."""
-    """数据集的路径"""
 
     embodiment_tag: Literal[tuple(EMBODIMENT_TAG_MAPPING.keys())] = "gr1"
     """Embodiment tag to use."""
-    """要使用的具身标签"""
 
     video_backend: Literal["decord", "torchvision_av"] = "decord"
     """Backend to use for video loading, use torchvision_av for av encoded videos."""
-    """视频加载使用的后端，对于av编码的视频使用torchvision_av"""
 
     plot_state_action: bool = False
     """Whether to plot the state and action space."""
-    """是否绘制状态和动作空间"""
 
     steps: int = 200
     """Number of steps to plot."""
-    """要绘制的步数"""
 
 
 #####################################################################################
@@ -324,11 +318,10 @@ def load_dataset(
             "thus the state action ploting will not make sense, this is helpful to visualize the images"
             "to quickly sanity check the dataset used."
         )
-        print_yellow(
-            "注意：使用混合数据集时，我们会从所有数据集中随机采样，"
-            "因此状态动作绘图没有意义，这有助于可视化图像"
-            "以快速检查使用的数据集。"
-        )
+            # "注意：使用混合数据集时，我们会从所有数据集中随机采样，"
+            # "因此状态动作绘图没有意义，这有助于可视化图像"
+            # "以快速检查使用的数据集。"
+        # )
 
     print("\n" * 2)
     print("=" * 100)
@@ -374,7 +367,6 @@ def load_dataset(
                 print(f"Image {i}")
             images_list.append(img.copy())
 
-        # 收集状态和动作数据
         for state_key in state_modality_keys:
             state_dict[state_key].append(resp[state_key][0])
         for action_key in action_modality_keys:

@@ -48,24 +48,15 @@ if __name__ == "__main__":
         "--env_name",
         type=str,
         help="Name of the environment to run.",
-        # 要运行的环境名称
         default="<ENV_NAME>",  # change this to your environment name
-                             # 将此更改为您的环境名称
     )
     parser.add_argument("--port", type=int, help="Port number for the server.", default=5555)
-    # 服务器端口号
     parser.add_argument(
         "--host", type=str, help="Host address for the server.", default="localhost"
     )
-    # 服务器主机地址
-    parser.add_argument(
-        "--video_dir", type=str, help="Directory to save videos.", default="./videos"
-    )
-    # 保存视频的目录
+    parser.add_argument("--video_dir", type=str, help="Directory to save videos.", default=None)
     parser.add_argument("--n_episodes", type=int, help="Number of episodes to run.", default=2)
-    # 运行的episode数量
     parser.add_argument("--n_envs", type=int, help="Number of parallel environments.", default=1)
-    # 并行环境数量
     parser.add_argument(
         "--n_action_steps",
         type=int,

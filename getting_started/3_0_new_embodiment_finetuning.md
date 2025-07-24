@@ -236,3 +236,6 @@ We can see that the policy's prediction of the action seems to be close to the g
 The deployment script for G1 is not provided here. But this pipeline is similar to the so100 finetuning pipeline.
 
 G1的部署脚本未在此提供。但此管道与so100微调管道类似。
+## Step 5: Deployment
+
+The deployment script for G1 is not provided here. But this pipeline is similar to the so100 finetuning pipeline.
